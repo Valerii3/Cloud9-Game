@@ -4,6 +4,30 @@ import { pickSpawnType } from './difficulty.js';
 
 const { LANE_XS, DANGER_LINE_Y, BASE_FALL_SPEED, ITEM_RADIUS } = CONFIG;
 
+const ITEM_IMAGES = {
+  boomBot: new Image(),
+  spike: new Image(),
+  stealthDrone: new Image(),
+};
+ITEM_IMAGES.boomBot.src = 'img/Boom Bot.png';
+ITEM_IMAGES.spike.src = 'img/Spike.png';
+ITEM_IMAGES.stealthDrone.src = 'img/Stealth Drone.png';
+
+const ITEM_TYPE_TO_IMAGE = {
+  normal: ITEM_IMAGES.stealthDrone,
+  fast: ITEM_IMAGES.stealthDrone,
+  heavy: ITEM_IMAGES.boomBot,
+  bomb: ITEM_IMAGES.boomBot,
+  gold: ITEM_IMAGES.spike,
+  skull: ITEM_IMAGES.spike,
+  shield: ITEM_IMAGES.stealthDrone,
+  decoy: ITEM_IMAGES.spike,
+};
+
+function getImageForType(type) {
+  return ITEM_TYPE_TO_IMAGE[type] || ITEM_IMAGES.stealthDrone;
+}
+
 export const ITEM_TYPES = {
   NORMAL: 'normal',
   FAST: 'fast',
@@ -56,107 +80,115 @@ export function updateItems(state, dt) {
   }
 }
 
+function drawItemShape(ctx, item, r) {
+  switch (item.type) {
+    case ITEM_TYPES.NORMAL:
+      ctx.fillStyle = '#6cf';
+      ctx.beginPath();
+      ctx.arc(0, 0, r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#8df';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      break;
+    case ITEM_TYPES.FAST:
+      ctx.fillStyle = '#f96';
+      ctx.beginPath();
+      for (let i = 0; i < 4; i++) {
+        const a = (i * Math.PI / 2) + Math.PI / 4;
+        const x = Math.cos(a) * r, y = Math.sin(a) * r;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = '#faa';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      break;
+    case ITEM_TYPES.HEAVY:
+      ctx.fillStyle = '#888';
+      ctx.fillRect(-r, -r, r * 2, r * 2);
+      ctx.strokeStyle = '#aaa';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(-r, -r, r * 2, r * 2);
+      break;
+    case ITEM_TYPES.BOMB:
+      ctx.fillStyle = '#c44';
+      ctx.beginPath();
+      for (let i = 0; i < 5; i++) {
+        const a = (i / 5) * Math.PI * 2 - Math.PI / 2;
+        const x = Math.cos(a) * r, y = Math.sin(a) * r;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = '#f66';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      break;
+    case ITEM_TYPES.GOLD:
+      ctx.fillStyle = '#fc0';
+      ctx.beginPath();
+      for (let i = 0; i < 6; i++) {
+        const a = (i / 6) * Math.PI * 2 - Math.PI / 6;
+        const x = Math.cos(a) * r, y = Math.sin(a) * r;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = '#ffd700';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      break;
+    case ITEM_TYPES.SKULL:
+      ctx.fillStyle = '#333';
+      ctx.beginPath();
+      ctx.moveTo(0, -r);
+      ctx.lineTo(r, r);
+      ctx.lineTo(0, r * 0.5);
+      ctx.lineTo(-r, r);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = '#666';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      break;
+    case ITEM_TYPES.SHIELD:
+      ctx.fillStyle = '#6af';
+      ctx.beginPath();
+      ctx.arc(0, 0, r * 0.9, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#8cf';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      break;
+    case ITEM_TYPES.DECOY:
+      ctx.fillStyle = '#9a6';
+      ctx.beginPath();
+      ctx.arc(0, 0, r * 0.7, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#bc8';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      break;
+    default:
+      ctx.fillStyle = '#6cf';
+      ctx.beginPath();
+      ctx.arc(0, 0, r, 0, Math.PI * 2);
+      ctx.fill();
+  }
+}
+
 export function drawItems(ctx, state) {
   for (const item of state.items) {
     ctx.save();
     ctx.translate(item.x, item.y);
     const r = item.radius;
-
-    switch (item.type) {
-      case ITEM_TYPES.NORMAL:
-        ctx.fillStyle = '#6cf';
-        ctx.beginPath();
-        ctx.arc(0, 0, r, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = '#8df';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-        break;
-      case ITEM_TYPES.FAST:
-        ctx.fillStyle = '#f96';
-        ctx.beginPath();
-        for (let i = 0; i < 4; i++) {
-          const a = (i * Math.PI / 2) + Math.PI / 4;
-          const x = Math.cos(a) * r, y = Math.sin(a) * r;
-          if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-        }
-        ctx.closePath();
-        ctx.fill();
-        ctx.strokeStyle = '#faa';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-        break;
-      case ITEM_TYPES.HEAVY:
-        ctx.fillStyle = '#888';
-        ctx.fillRect(-r, -r, r * 2, r * 2);
-        ctx.strokeStyle = '#aaa';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(-r, -r, r * 2, r * 2);
-        break;
-      case ITEM_TYPES.BOMB:
-        ctx.fillStyle = '#c44';
-        ctx.beginPath();
-        for (let i = 0; i < 5; i++) {
-          const a = (i / 5) * Math.PI * 2 - Math.PI / 2;
-          const x = Math.cos(a) * r, y = Math.sin(a) * r;
-          if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-        }
-        ctx.closePath();
-        ctx.fill();
-        ctx.strokeStyle = '#f66';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-        break;
-      case ITEM_TYPES.GOLD:
-        ctx.fillStyle = '#fc0';
-        ctx.beginPath();
-        for (let i = 0; i < 6; i++) {
-          const a = (i / 6) * Math.PI * 2 - Math.PI / 6;
-          const x = Math.cos(a) * r, y = Math.sin(a) * r;
-          if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-        }
-        ctx.closePath();
-        ctx.fill();
-        ctx.strokeStyle = '#ffd700';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-        break;
-      case ITEM_TYPES.SKULL:
-        ctx.fillStyle = '#333';
-        ctx.beginPath();
-        ctx.moveTo(0, -r);
-        ctx.lineTo(r, r);
-        ctx.lineTo(0, r * 0.5);
-        ctx.lineTo(-r, r);
-        ctx.closePath();
-        ctx.fill();
-        ctx.strokeStyle = '#666';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-        break;
-      case ITEM_TYPES.SHIELD:
-        ctx.fillStyle = '#6af';
-        ctx.beginPath();
-        ctx.arc(0, 0, r * 0.9, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = '#8cf';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-        break;
-      case ITEM_TYPES.DECOY:
-        ctx.fillStyle = '#9a6';
-        ctx.beginPath();
-        ctx.arc(0, 0, r * 0.7, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = '#bc8';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-        break;
-      default:
-        ctx.fillStyle = '#6cf';
-        ctx.beginPath();
-        ctx.arc(0, 0, r, 0, Math.PI * 2);
-        ctx.fill();
+    const img = getImageForType(item.type);
+    if (img && img.complete && img.naturalWidth > 0) {
+      ctx.drawImage(img, -r, -r, r * 2, r * 2);
+    } else {
+      drawItemShape(ctx, item, r);
     }
     ctx.restore();
   }

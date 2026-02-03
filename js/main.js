@@ -4,12 +4,22 @@ import { drawCannons, drawAimPreview, updateCannonFromMouse, getLeftMuzzle, getR
 import { spawnBullet, updateBullets, drawBullets } from './bullets.js';
 import { spawnItem, updateItems, drawItems, checkDangerLine } from './items.js';
 import { checkCollisions } from './collision.js';
-import { drawBackground, drawParticles, getScreenShakeOffset, drawHitFlash, drawComboMeter, updateParticles } from './effects.js';
-import { playShoot, playHit, playMiss, playBomb, playBulletTime } from './audio.js';
+import { drawBackground, drawParticles, getScreenShakeOffset, drawHitFlash, drawComboMeter, updateParticles, drawNeonText } from './effects.js';
+import { getLeaderboard, saveScore } from './leaderboard.js';
+import { playShoot, playHit, playMiss, playLoss, playBomb, playBulletTime, startBackgroundMusic } from './audio.js';
 
 const canvas = document.getElementById('game-canvas');
 const ctx = canvas.getContext('2d');
 const startOverlay = document.getElementById('start-overlay');
+const gameOverOverlay = document.getElementById('game-over-overlay');
+
+function fillLeaderboardList(listEl, scores) {
+  if (!listEl) return;
+  const list = Array.isArray(scores) ? scores : getLeaderboard();
+  listEl.innerHTML = list.length
+    ? list.map((score, i) => `<li>${i + 1}. ${score.toLocaleString()}</li>`).join('')
+    : '<li>No scores yet</li>';
+}
 
 const backgroundImage = new Image();
 backgroundImage.src = 'img/background.png';
@@ -40,6 +50,7 @@ function createState() {
     shields: 0,
     bulletTimeUntil: 0,
     screenShakeUntil: 0,
+    gameOverScoreSaved: false,
   };
 }
 
@@ -123,6 +134,7 @@ function gameLoop(time) {
       state.shields--;
     } else {
       state.lives--;
+      playLoss();
       if (state.lives <= 0) state.gameOver = true;
     }
     state.streak = 0;
@@ -208,41 +220,46 @@ function draw(state) {
   drawHitFlash(ctx, state);
   drawComboMeter(ctx, state);
 
-  ctx.fillStyle = '#fff';
-  ctx.font = '24px system-ui, sans-serif';
-  ctx.fillText('Score: ' + (state.score ?? 0), 20, 32);
-  const mult = 1 + Math.floor((state.streak ?? 0) / 5);
-  ctx.fillText('x' + mult, 20, 58);
+  const rightX = CONFIG.W - 24;
   const livesStr = '♥'.repeat(state.lives ?? 3);
-  ctx.fillText(livesStr, 20, 84);
+  drawNeonText(ctx, livesStr, 20, 32, '900 22px Orbitron, sans-serif', 'left', true);
   if ((state.shields ?? 0) > 0) {
-    ctx.fillText('🛡' + state.shields, 20, 110);
+    drawNeonText(ctx, '🛡 ' + state.shields, 20, 58, '900 20px Orbitron, sans-serif', 'left', true);
   }
   if (state.started && !state.gameOver && state.startTime) {
     const sec = Math.floor(performance.now() / 1000 - state.startTime);
-    ctx.fillText(sec + 's', CONFIG.W - 60, 32);
+    drawNeonText(ctx, sec + 's', CONFIG.W / 2, 32, '900 22px Orbitron, sans-serif', 'center', true);
+  }
+  drawNeonText(ctx, 'SCORE ' + (state.score ?? 0).toLocaleString(), rightX, 32, '900 22px Orbitron, sans-serif', 'right', false);
+  const mult = 1 + Math.floor((state.streak ?? 0) / 5);
+  drawNeonText(ctx, 'x' + mult, rightX, 58, '900 20px Orbitron, sans-serif', 'right', true);
+  const topScores = getLeaderboard();
+  const topFont = '700 14px Orbitron, sans-serif';
+  for (let i = 0; i < topScores.length; i++) {
+    drawNeonText(ctx, (i + 1) + '. ' + topScores[i].toLocaleString(), rightX, 84 + i * 18, topFont, 'right', true);
   }
   if (state.popupUntil > performance.now() && state.popupText) {
     ctx.save();
-    ctx.font = 'bold 36px system-ui, sans-serif';
+    ctx.font = 'bold 36px Orbitron, sans-serif';
     ctx.textAlign = 'center';
+    ctx.shadowBlur = 20;
+    ctx.shadowColor = state.popupText === 'Miss!' ? 'rgba(255, 80, 80, 0.9)' : 'rgba(255, 200, 80, 0.9)';
     ctx.fillStyle = state.popupText === 'Miss!' ? '#f66' : '#ffd700';
     ctx.fillText(state.popupText, CONFIG.W / 2, CONFIG.H / 2 - 80);
     ctx.restore();
     ctx.textAlign = 'left';
+    ctx.shadowBlur = 0;
   }
 
   if (state.gameOver) {
-    ctx.fillStyle = 'rgba(0,0,0,0.75)';
-    ctx.fillRect(0, 0, w, h);
-    ctx.fillStyle = '#fff';
-    ctx.font = '48px system-ui, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('Game Over', w / 2, h / 2 - 20);
-    ctx.font = '24px system-ui, sans-serif';
-    ctx.fillText('Score: ' + state.score, w / 2, h / 2 + 20);
-    ctx.fillText('Space or click to restart', w / 2, h / 2 + 55);
-    ctx.textAlign = 'left';
+    if (!state.gameOverScoreSaved) {
+      state.gameOverScoreSaved = true;
+      saveScore(state.score);
+      gameOverOverlay.classList.remove('hidden');
+      const scoreEl = document.getElementById('game-over-score');
+      if (scoreEl) scoreEl.textContent = 'SCORE ' + state.score.toLocaleString();
+      fillLeaderboardList(document.getElementById('game-over-leaderboard-list'));
+    }
   }
 }
 
@@ -255,9 +272,11 @@ window.addEventListener('keydown', (e) => {
     state.startTime = performance.now() / 1000;
     startOverlay.classList.add('hidden');
     state.lastSpawnTime = performance.now() / 1000;
+    startBackgroundMusic();
   }
   state.keys[e.code] = true;
   if (state.gameOver && (e.code === 'Space' || e.code === 'Enter')) {
+    gameOverOverlay.classList.add('hidden');
     state = createState();
     state.started = true;
     state.startTime = performance.now() / 1000;
@@ -279,9 +298,11 @@ window.addEventListener('mousedown', (e) => {
     state.startTime = performance.now() / 1000;
     startOverlay.classList.add('hidden');
     state.lastSpawnTime = performance.now() / 1000;
+    startBackgroundMusic();
     return;
   }
   if (state.gameOver) {
+    gameOverOverlay.classList.add('hidden');
     state = createState();
     state.started = true;
     state.startTime = performance.now() / 1000;
@@ -295,5 +316,6 @@ window.addEventListener('mousedown', (e) => {
 
 window.addEventListener('mouseup', () => {});
 
+fillLeaderboardList(document.getElementById('start-leaderboard-list'));
 resize();
 requestAnimationFrame(gameLoop);

@@ -4,13 +4,37 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Cloud9</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
   <div id="game-container">
     <canvas id="game-canvas" width="1024" height="768"></canvas>
   </div>
-  <div id="start-overlay">Click or press any key to start</div>
+  <div id="start-overlay">
+    <div id="start-overlay-inner">
+      <h1 id="start-title">CLOUD9</h1>
+      <p id="start-subtitle">Click or press any key to start</p>
+      <div id="start-leaderboard">
+        <div class="leaderboard-title">TOP 5</div>
+        <ol id="start-leaderboard-list"></ol>
+      </div>
+      <div id="start-glow"></div>
+    </div>
+  </div>
+  <div id="game-over-overlay" class="hidden">
+    <div id="game-over-inner">
+      <h2 id="game-over-title">GAME OVER</h2>
+      <p id="game-over-score"></p>
+      <div id="game-over-leaderboard">
+        <div class="leaderboard-title">TOP 5</div>
+        <ol id="game-over-leaderboard-list"></ol>
+      </div>
+      <p id="game-over-restart">Space or click to restart</p>
+    </div>
+  </div>
   <script type="module" src="js/main.js"></script>
 </body>
 </html>

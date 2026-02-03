@@ -93,20 +93,29 @@ export function drawComboMeter(ctx, state) {
   const cx = W - 80;
   const cy = 120;
   const r = 30;
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+  ctx.strokeStyle = 'rgba(0, 255, 255, 0.25)';
   ctx.lineWidth = 4;
   ctx.beginPath();
   ctx.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2);
   ctx.stroke();
-  ctx.strokeStyle = streak >= segment ? '#ffd700' : '#8cf';
+  ctx.strokeStyle = streak >= segment ? 'rgba(255, 200, 80, 0.9)' : 'rgba(0, 255, 255, 0.7)';
   ctx.lineWidth = 4;
   ctx.beginPath();
   ctx.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * fill);
   ctx.stroke();
   const mult = 1 + Math.floor(streak / segment);
-  ctx.fillStyle = '#fff';
-  ctx.font = '14px system-ui, sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText('x' + mult, cx, cy + 5);
+  drawNeonText(ctx, 'x' + mult, cx, cy + 5, '14px Orbitron, sans-serif', 'center', true);
+}
+
+export function drawNeonText(ctx, text, x, y, font, align, small) {
+  ctx.font = font || '900 22px Orbitron, sans-serif';
+  ctx.textAlign = align || 'left';
+  const color = small ? 'rgba(0, 255, 255, 0.95)' : 'rgba(255, 255, 255, 0.98)';
+  ctx.shadowBlur = small ? 12 : 18;
+  ctx.shadowColor = 'rgba(0, 255, 255, 0.9)';
+  ctx.fillStyle = color;
+  ctx.fillText(String(text), x, y);
+  ctx.shadowBlur = 0;
+  ctx.shadowColor = 'transparent';
   ctx.textAlign = 'left';
 }

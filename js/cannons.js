@@ -1,21 +1,28 @@
 import { CONFIG } from './config.js';
 
-const { LEFT_CANNON_PIVOT, RIGHT_CANNON_PIVOT, CANNON_BARREL_LENGTH } = CONFIG;
+const { LEFT_CANNON_PIVOT, RIGHT_CANNON_PIVOT, CANNON_BARREL_LENGTH, CANNON_IMG_WIDTH, CANNON_IMG_HEIGHT } = CONFIG;
+
+export const leftCannonImg = new Image();
+leftCannonImg.src = 'img/Alarmbot.png';
+export const rightCannonImg = new Image();
+rightCannonImg.src = 'img/Boom Bot.png';
 
 function degToRad(deg) {
   return (deg * Math.PI) / 180;
 }
 
+const MUZZLE_OFFSET = CANNON_IMG_HEIGHT;
+
 function getMuzzlePos(pivot, angleDeg, isLeft) {
   let dx, dy;
   if (isLeft) {
     const rad = degToRad(angleDeg);
-    dx = Math.sin(rad) * CANNON_BARREL_LENGTH;
-    dy = -Math.cos(rad) * CANNON_BARREL_LENGTH;
+    dx = Math.sin(rad) * MUZZLE_OFFSET;
+    dy = -Math.cos(rad) * MUZZLE_OFFSET;
   } else {
     const rad = Math.PI + ((angleDeg - 90) * Math.PI) / 180;
-    dx = Math.cos(rad) * CANNON_BARREL_LENGTH;
-    dy = Math.sin(rad) * CANNON_BARREL_LENGTH;
+    dx = Math.cos(rad) * MUZZLE_OFFSET;
+    dy = Math.sin(rad) * MUZZLE_OFFSET;
   }
   return {
     x: pivot.x + dx,
@@ -45,56 +52,77 @@ export function getBulletVelocity(angleDeg, isLeft) {
   return { vx, vy };
 }
 
-export function drawCannons(ctx, state) {
-  const drawCannon = (pivot, angleDeg, muzzleFlash, isLeft) => {
-    const rad = isLeft
-      ? degToRad(angleDeg)
-      : Math.PI + ((angleDeg - 90) * Math.PI) / 180;
-    const dx = isLeft
-      ? Math.sin(rad) * CANNON_BARREL_LENGTH
-      : Math.cos(rad) * CANNON_BARREL_LENGTH;
-    const dy = isLeft
-      ? -Math.cos(rad) * CANNON_BARREL_LENGTH
-      : Math.sin(rad) * CANNON_BARREL_LENGTH;
-
-    // Base (circle)
-    ctx.fillStyle = '#444';
+function drawCannonImage(ctx, img, pivot, angleDeg, isLeft, muzzleFlash) {
+  if (!img.complete || img.naturalWidth === 0) return false;
+  const rad = isLeft
+    ? degToRad(angleDeg)
+    : Math.PI + ((angleDeg - 90) * Math.PI) / 180;
+  const w = CANNON_IMG_WIDTH;
+  const h = CANNON_IMG_HEIGHT;
+  ctx.save();
+  ctx.translate(pivot.x, pivot.y);
+  ctx.rotate(rad);
+  ctx.drawImage(img, -w / 2, -h, w, h);
+  if (muzzleFlash > 0) {
+    const alpha = muzzleFlash;
+    ctx.fillStyle = `rgba(255, 220, 100, ${alpha})`;
     ctx.beginPath();
-    ctx.arc(pivot.x, pivot.y, 14, 0, Math.PI * 2);
+    ctx.moveTo(0, -h + 8);
+    ctx.lineTo(-6, -h);
+    ctx.lineTo(6, -h);
+    ctx.closePath();
     ctx.fill();
-    ctx.strokeStyle = '#666';
-    ctx.lineWidth = 2;
-    ctx.stroke();
+  }
+  ctx.restore();
+  return true;
+}
 
-    // Barrel (rotated rect)
+function drawCannonFallback(ctx, pivot, angleDeg, muzzleFlash, isLeft) {
+  const rad = isLeft
+    ? degToRad(angleDeg)
+    : Math.PI + ((angleDeg - 90) * Math.PI) / 180;
+  const dx = isLeft
+    ? Math.sin(rad) * CANNON_BARREL_LENGTH
+    : Math.cos(rad) * CANNON_BARREL_LENGTH;
+  const dy = isLeft
+    ? -Math.cos(rad) * CANNON_BARREL_LENGTH
+    : Math.sin(rad) * CANNON_BARREL_LENGTH;
+  ctx.fillStyle = '#444';
+  ctx.beginPath();
+  ctx.arc(pivot.x, pivot.y, 14, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = '#666';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.save();
+  ctx.translate(pivot.x, pivot.y);
+  ctx.rotate(rad);
+  ctx.fillStyle = '#555';
+  ctx.fillRect(0, -6, CANNON_BARREL_LENGTH, 12);
+  ctx.strokeStyle = '#777';
+  ctx.strokeRect(0, -6, CANNON_BARREL_LENGTH, 12);
+  ctx.restore();
+  if (muzzleFlash > 0) {
+    const alpha = muzzleFlash;
     ctx.save();
-    ctx.translate(pivot.x, pivot.y);
+    ctx.translate(pivot.x + dx, pivot.y + dy);
     ctx.rotate(rad);
-    ctx.fillStyle = '#555';
-    ctx.fillRect(0, -6, CANNON_BARREL_LENGTH, 12);
-    ctx.strokeStyle = '#777';
-    ctx.strokeRect(0, -6, CANNON_BARREL_LENGTH, 12);
+    ctx.fillStyle = `rgba(255, 220, 100, ${alpha})`;
+    ctx.beginPath();
+    ctx.moveTo(CANNON_BARREL_LENGTH + 8, 0);
+    ctx.lineTo(CANNON_BARREL_LENGTH + 4, -6);
+    ctx.lineTo(CANNON_BARREL_LENGTH + 4, 6);
+    ctx.closePath();
+    ctx.fill();
     ctx.restore();
+  }
+}
 
-    // Muzzle flash (short-lived)
-    if (muzzleFlash > 0) {
-      const alpha = muzzleFlash;
-      ctx.save();
-      ctx.translate(pivot.x + dx, pivot.y + dy);
-      ctx.rotate(rad);
-      ctx.fillStyle = `rgba(255, 220, 100, ${alpha})`;
-      ctx.beginPath();
-      ctx.moveTo(CANNON_BARREL_LENGTH + 8, 0);
-      ctx.lineTo(CANNON_BARREL_LENGTH + 4, -6);
-      ctx.lineTo(CANNON_BARREL_LENGTH + 4, 6);
-      ctx.closePath();
-      ctx.fill();
-      ctx.restore();
-    }
-  };
-
-  drawCannon(LEFT_CANNON_PIVOT, state.leftAngle, state.muzzleFlashLeft, true);
-  drawCannon(RIGHT_CANNON_PIVOT, state.rightAngle, state.muzzleFlashRight, false);
+export function drawCannons(ctx, state) {
+  const leftDrawn = drawCannonImage(ctx, leftCannonImg, LEFT_CANNON_PIVOT, state.leftAngle, true, state.muzzleFlashLeft);
+  if (!leftDrawn) drawCannonFallback(ctx, LEFT_CANNON_PIVOT, state.leftAngle, state.muzzleFlashLeft, true);
+  const rightDrawn = drawCannonImage(ctx, rightCannonImg, RIGHT_CANNON_PIVOT, state.rightAngle, false, state.muzzleFlashRight);
+  if (!rightDrawn) drawCannonFallback(ctx, RIGHT_CANNON_PIVOT, state.rightAngle, state.muzzleFlashRight, false);
 }
 
 export function drawAimPreview(ctx, state) {

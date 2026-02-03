@@ -1,5 +1,37 @@
 let ctx = null;
 
+const bgMusic = typeof document !== 'undefined' && document.createElement('audio');
+if (bgMusic) {
+  bgMusic.src = 'audio/arcade-music.mp3';
+  bgMusic.loop = true;
+  bgMusic.volume = 0.4;
+}
+
+const hitSound = typeof document !== 'undefined' && document.createElement('audio');
+if (hitSound) {
+  hitSound.src = 'audio/hit.wav';
+  hitSound.volume = 0.5;
+}
+
+const lossSound = typeof document !== 'undefined' && document.createElement('audio');
+if (lossSound) {
+  lossSound.src = 'audio/loss.wav';
+  lossSound.volume = 0.5;
+}
+
+export function startBackgroundMusic() {
+  if (bgMusic) {
+    bgMusic.play().catch(() => {});
+  }
+}
+
+export function stopBackgroundMusic() {
+  if (bgMusic) {
+    bgMusic.pause();
+    bgMusic.currentTime = 0;
+  }
+}
+
 function getContext() {
   if (ctx) return ctx;
   try {
@@ -26,18 +58,17 @@ export function playShoot() {
 }
 
 export function playHit() {
-  const ac = getContext();
-  if (!ac) return;
-  const osc = ac.createOscillator();
-  const gain = ac.createGain();
-  osc.connect(gain);
-  gain.connect(ac.destination);
-  osc.frequency.setValueAtTime(440, ac.currentTime);
-  osc.frequency.exponentialRampToValueAtTime(660, ac.currentTime + 0.08);
-  gain.gain.setValueAtTime(0.06, ac.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.08);
-  osc.start(ac.currentTime);
-  osc.stop(ac.currentTime + 0.08);
+  if (hitSound) {
+    hitSound.currentTime = 0;
+    hitSound.play().catch(() => {});
+  }
+}
+
+export function playLoss() {
+  if (lossSound) {
+    lossSound.currentTime = 0;
+    lossSound.play().catch(() => {});
+  }
 }
 
 export function playMiss() {
