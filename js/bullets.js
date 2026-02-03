@@ -1,23 +1,20 @@
 import { CONFIG } from './config.js';
-import { getLeftMuzzle, getRightMuzzle, getBulletVelocity } from './cannons.js';
+import { getCenterMuzzle, getBulletVelocity } from './cannons.js';
 
 const { BULLET_RADIUS, TRAIL_LENGTH } = CONFIG;
 
-export function spawnBullet(state, side) {
-  const isLeft = side === 'left';
-  const muzzle = isLeft ? getLeftMuzzle(state) : getRightMuzzle(state);
-  const angle = isLeft ? state.leftAngle : state.rightAngle;
-  const { vx, vy } = getBulletVelocity(angle, isLeft);
+export function spawnBullet(state) {
+  const muzzle = getCenterMuzzle(state);
+  const { vx, vy } = getBulletVelocity(state.turretAngle);
   state.bullets.push({
     x: muzzle.x,
     y: muzzle.y,
     vx,
     vy,
     trail: [{ x: muzzle.x, y: muzzle.y }],
-    side,
+    side: 'center',
   });
-  if (isLeft) state.muzzleFlashLeft = 1;
-  else state.muzzleFlashRight = 1;
+  state.muzzleFlash = 1;
 }
 
 export function updateBullets(state, dt) {

@@ -1,6 +1,6 @@
 import { CONFIG } from './config.js';
 import { getSpawnIntervalMs, getFallSpeedMultiplier } from './difficulty.js';
-import { drawCannons, drawAimPreview, updateCannonFromMouse, getLeftMuzzle, getRightMuzzle, whichCannonFromMouse } from './cannons.js';
+import { drawCannons, drawAimPreview, updateCannonFromMouse } from './cannons.js';
 import { spawnBullet, updateBullets, drawBullets } from './bullets.js';
 import { spawnItem, updateItems, drawItems, checkDangerLine } from './items.js';
 import { checkCollisions } from './collision.js';
@@ -26,12 +26,10 @@ backgroundImage.src = 'img/background.png';
 
 function createState() {
   return {
-    leftAngle: 45,
-    rightAngle: 135,
+    turretAngle: 90,
     bullets: [],
     items: [],
-    muzzleFlashLeft: 0,
-    muzzleFlashRight: 0,
+    muzzleFlash: 0,
     lastSpawnTime: 0,
     started: false,
     gameOver: false,
@@ -67,28 +65,17 @@ function handleInput() {
   const keyAngleStep = 3;
   if (state.gameOver) return;
 
-  if (state.keys?.KeyA) state.leftAngle = Math.max(CONFIG.LEFT_ANGLE_MIN, state.leftAngle - keyAngleStep);
-  if (state.keys?.KeyD) state.leftAngle = Math.min(CONFIG.LEFT_ANGLE_MAX, state.leftAngle + keyAngleStep);
-  if (state.keys?.KeyJ) state.rightAngle = Math.max(CONFIG.RIGHT_ANGLE_MIN, state.rightAngle - keyAngleStep);
-  if (state.keys?.KeyL) state.rightAngle = Math.min(CONFIG.RIGHT_ANGLE_MAX, state.rightAngle + keyAngleStep);
+  if (state.keys?.KeyA) state.turretAngle = Math.max(CONFIG.TURRET_ANGLE_MIN, state.turretAngle - keyAngleStep);
+  if (state.keys?.KeyD) state.turretAngle = Math.min(CONFIG.TURRET_ANGLE_MAX, state.turretAngle + keyAngleStep);
 
-  if (state.keys?.KeyS) {
-    if (!state.shootLeftHeld) {
-      spawnBullet(state, 'left');
+  if (state.keys?.KeyS || state.keys?.Space) {
+    if (!state.shootHeld) {
+      spawnBullet(state);
       playShoot();
     }
-    state.shootLeftHeld = true;
+    state.shootHeld = true;
   } else {
-    state.shootLeftHeld = false;
-  }
-  if (state.keys?.KeyK) {
-    if (!state.shootRightHeld) {
-      spawnBullet(state, 'right');
-      playShoot();
-    }
-    state.shootRightHeld = true;
-  } else {
-    state.shootRightHeld = false;
+    state.shootHeld = false;
   }
 }
 
@@ -178,8 +165,7 @@ function gameLoop(time) {
     playHit();
   }
 
-  state.muzzleFlashLeft = Math.max(0, (state.muzzleFlashLeft ?? 0) - 0.25);
-  state.muzzleFlashRight = Math.max(0, (state.muzzleFlashRight ?? 0) - 0.25);
+  state.muzzleFlash = Math.max(0, (state.muzzleFlash ?? 0) - 0.25);
   updateParticles(state);
 
   draw(state);
@@ -282,7 +268,7 @@ window.addEventListener('keydown', (e) => {
     state.startTime = performance.now() / 1000;
     state.lastSpawnTime = performance.now() / 1000;
   }
-  if (['KeyA', 'KeyD', 'KeyS', 'KeyJ', 'KeyK', 'KeyL'].includes(e.code)) e.preventDefault();
+  if (['KeyA', 'KeyD', 'KeyS', 'Space'].includes(e.code)) e.preventDefault();
 });
 window.addEventListener('keyup', (e) => {
   state.keys[e.code] = false;
@@ -309,8 +295,7 @@ window.addEventListener('mousedown', (e) => {
     state.lastSpawnTime = performance.now() / 1000;
     return;
   }
-  const side = whichCannonFromMouse(e.clientX);
-  spawnBullet(state, side);
+  spawnBullet(state);
   playShoot();
 });
 

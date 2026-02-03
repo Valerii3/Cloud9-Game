@@ -28,6 +28,21 @@ function getImageForType(type) {
   return ITEM_TYPE_TO_IMAGE[type] || ITEM_IMAGES.stealthDrone;
 }
 
+// Stealth Drone = 4x, Boom Bot / Spike = 3x (twice previous size)
+const ITEM_TYPE_TO_DRAW_SCALE = {
+  normal: 4,
+  fast: 4,
+  heavy: 3,
+  bomb: 3,
+  gold: 3,
+  skull: 3,
+  shield: 4,
+  decoy: 3,
+};
+function getDrawScaleForType(type) {
+  return ITEM_TYPE_TO_DRAW_SCALE[type] ?? 3;
+}
+
 export const ITEM_TYPES = {
   NORMAL: 'normal',
   FAST: 'fast',
@@ -185,8 +200,10 @@ export function drawItems(ctx, state) {
     ctx.translate(item.x, item.y);
     const r = item.radius;
     const img = getImageForType(item.type);
+    const drawScale = getDrawScaleForType(item.type);
     if (img && img.complete && img.naturalWidth > 0) {
-      ctx.drawImage(img, -r, -r, r * 2, r * 2);
+      const size = r * 2 * drawScale;
+      ctx.drawImage(img, -size / 2, -size / 2, size, size);
     } else {
       drawItemShape(ctx, item, r);
     }

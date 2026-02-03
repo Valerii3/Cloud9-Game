@@ -24,13 +24,10 @@ export const CONFIG = {
   BASE_FALL_SPEED: 150,
   SPAWN_INTERVAL_MS: 1200,
   CANNON_BARREL_LENGTH: 50,
-  LEFT_CANNON_PIVOT: { x: MARGIN, y: H - MARGIN },
-  RIGHT_CANNON_PIVOT: { x: W - MARGIN, y: H - MARGIN },
-  // Cannon angle limits (degrees): left 0=up, 90=right; right 90=right, 180=up
-  LEFT_ANGLE_MIN: 0,
-  LEFT_ANGLE_MAX: 90,
-  RIGHT_ANGLE_MIN: 90,
-  RIGHT_ANGLE_MAX: 180,
+  CENTER_CANNON_PIVOT: { x: W / 2, y: H - MARGIN },
+  // Single turret: 0 = left, 90 = up, 180 = right
+  TURRET_ANGLE_MIN: 0,
+  TURRET_ANGLE_MAX: 180,
   ITEM_RADIUS: 32,
   CANNON_IMG_WIDTH: 64,
   CANNON_IMG_HEIGHT: 80,
